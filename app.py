@@ -1,7 +1,6 @@
 import pandas as pd
 import streamlit as st
 import pickle
-from sklearn.preprocessing import StandardScaler, LabelEncoder
 
 # ---- Load saved objects ----
 model = pickle.load(open("loan_model.pkl", "rb"))
@@ -15,42 +14,32 @@ st.write("Enter applicant details to predict loan approval status.")
 # ---- User Input ----
 def user_input():
     gender = st.selectbox("Gender", ["Male", "Female"])
-    married = st.selectbox("Married", ["Yes", "No"])
-    dependents = st.selectbox("Dependents", ["0", "1", "2", "3+"])
-    education = st.selectbox("Education", ["Graduate", "Not Graduate"])
-    self_employed = st.selectbox("Self Employed", ["Yes", "No"])
-    applicant_income = st.number_input("Applicant Income", min_value=0)
-    coapplicant_income = st.number_input("Coapplicant Income", min_value=0)
-    loan_amount = st.number_input("Loan Amount", min_value=0)
-    loan_amount_term = st.number_input("Loan Amount Term (in months)", min_value=0)
-    credit_history = st.selectbox("Credit History", [1.0, 0.0])
-    property_area = st.selectbox("Property Area", ["Urban", "Semiurban", "Rural"])
-    
+    education = st.selectbox("Education", ["High School or Below", "Bechalor", "college", "Master or Above"])
+    principal = st.number_input("Loan Principal Amount", min_value=0)
+    terms = st.number_input("Loan Terms (in days)", min_value=0)
+    age = st.number_input("Applicant Age", min_value=18, max_value=100)
+
     data = {
         "Gender": gender,
-        "Married": married,
-        "Dependents": dependents,
-        "Education": education,
-        "Self_Employed": self_employed,
-        "ApplicantIncome": applicant_income,
-        "CoapplicantIncome": coapplicant_income,
-        "LoanAmount": loan_amount,
-        "Loan_Amount_Term": loan_amount_term,
-        "Credit_History": credit_history,
-        "Property_Area": property_area
+        "education": education,
+        "Principal": principal,
+        "terms": terms,
+        "age": age
     }
     return pd.DataFrame([data])
 
 input_df = user_input()
 
 # ---- Preprocess Input ----
-categorical_cols = ["Gender","Married","Dependents","Education","Self_Employed","Property_Area"]
-numerical_cols = ["ApplicantIncome","CoapplicantIncome","LoanAmount","Loan_Amount_Term"]
+categorical_cols = ["Gender", "education"]
+numerical_cols = ["Principal", "terms", "age"]
 
-# Encode categorical columns
+# Encode categorical columns safely
 for col in categorical_cols:
+    if col not in label_encoders:
+        st.error(f"⚠️ No encoder found for column: {col}")
+        continue
     le = label_encoders[col]
-    # If unseen category, assign first known class
     input_df[col] = input_df[col].apply(lambda x: x if x in le.classes_ else le.classes_[0])
     input_df[col] = le.transform(input_df[col])
 
@@ -63,9 +52,3 @@ if st.button("Predict"):
     prediction = model.predict(input_df)[0]
     result = "Approved ✅" if prediction == 1 else "Rejected ❌"
     st.success(f"Loan Status: {result}")
-
-for col in categorical_cols:
-    le = label_encoders[col]
-    # If unseen category, assign first known class
-    input_df[col] = input_df[col].apply(lambda x: x if x in le.classes_ else le.classes_[0])
-    input_df[col] = le.transform(input_df[col])

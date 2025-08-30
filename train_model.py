@@ -4,12 +4,12 @@ from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.ensemble import RandomForestClassifier
 import pickle
 
-# Load dataset
+# ---- Load dataset ----
 df = pd.read_csv("loan_dataset.csv")
 df = df.dropna()
 
-# Encode categorical columns
-categorical_cols = ["Gender","Married","Dependents","Education","Self_Employed","Property_Area"]
+# ---- Encode categorical columns ----
+categorical_cols = ["Gender", "education"]
 label_encoders = {}
 
 for col in categorical_cols:
@@ -17,26 +17,27 @@ for col in categorical_cols:
     df[col] = le.fit_transform(df[col])
     label_encoders[col] = le
 
-# Encode target
-target_le = LabelEncoder()
-df["Loan_Status"] = target_le.fit_transform(df["Loan_Status"])
+# ---- Encode target ----
+target_encoder = LabelEncoder()
+df["loan_status"] = target_encoder.fit_transform(df["loan_status"])
 
-# Split
-X = df.drop("Loan_Status", axis=1)
-y = df["Loan_Status"]
+# ---- Features & Target ----
+X = df[["Gender", "education", "Principal", "terms", "age"]]
+y = df["loan_status"]
 
-# Scale numeric columns
-numerical_cols = ["ApplicantIncome","CoapplicantIncome","LoanAmount","Loan_Amount_Term"]
+# ---- Scale numerical columns ----
+numerical_cols = ["Principal", "terms", "age"]
 scaler = StandardScaler()
 X[numerical_cols] = scaler.fit_transform(X[numerical_cols])
 
-# Train model
+# ---- Train model ----
 model = RandomForestClassifier(random_state=42)
 model.fit(X, y)
 
-# Save objects
+# ---- Save objects ----
 pickle.dump(model, open("loan_model.pkl", "wb"))
 pickle.dump(scaler, open("scaler.pkl", "wb"))
 pickle.dump(label_encoders, open("label_encoders.pkl", "wb"))
+pickle.dump(target_encoder, open("target_encoder.pkl", "wb"))
 
-print("Model, scaler, and encoders saved!")
+print("✅ Model, scaler, and encoders saved successfully!")
