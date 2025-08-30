@@ -63,3 +63,9 @@ if st.button("Predict"):
     prediction = model.predict(input_df)[0]
     result = "Approved ✅" if prediction == 1 else "Rejected ❌"
     st.success(f"Loan Status: {result}")
+
+for col in categorical_cols:
+    le = label_encoders[col]
+    # If unseen category, assign first known class
+    input_df[col] = input_df[col].apply(lambda x: x if x in le.classes_ else le.classes_[0])
+    input_df[col] = le.transform(input_df[col])
