@@ -21,17 +21,17 @@ with open("target_encoder.pkl", "rb") as f:
 
 # --- User Inputs ---
 def user_input():
-    gender = st.selectbox("Gender", ["Male", "Female"])
-    married = st.selectbox("Married", ["Yes", "No"])
+    gender = st.selectbox("Gender", ["Male", "Female"]).title()
+    married = st.selectbox("Married", ["Yes", "No"]).title()
     dependents = st.number_input("Dependents", 0, 10, 0)
-    education = st.selectbox("Education", ["Graduate", "Not Graduate"])
-    self_employed = st.selectbox("Self Employed", ["Yes", "No"])
+    education = st.selectbox("Education", ["Graduate", "Not Graduate"]).title()
+    self_employed = st.selectbox("Self Employed", ["Yes", "No"]).title()
     applicant_income = st.number_input("Applicant Income", 0, 100000, 5000)
     coapplicant_income = st.number_input("Coapplicant Income", 0, 100000, 0)
     loan_amount = st.number_input("Loan Amount", 0, 100000, 10000)
     loan_amount_term = st.number_input("Loan Amount Term", 0, 500, 360)
     credit_history = st.selectbox("Credit History", [1.0, 0.0])
-    property_area = st.selectbox("Property Area", ["Urban", "Semiurban", "Rural"])
+    property_area = st.selectbox("Property Area", ["Urban", "Semiurban", "Rural"]).title()
     
     data = {
         "gender": gender,
@@ -51,14 +51,20 @@ def user_input():
 
 input_df = user_input()
 
-# --- Preprocess input ---
+# --- Preprocess input safely ---
 for col, le in label_encoders.items():
     if col in input_df.columns:
+        # Replace unseen categories with most frequent class from training
+        input_df[col] = input_df[col].apply(lambda x: x if x in le.classes_ else le.classes_[0])
         input_df[col] = le.transform(input_df[col])
 
 # Scale numerical features
 numerical_cols = ["dependents","applicant_income","coapplicant_income","loan_amount","loan_amount_term"]
 input_df[numerical_cols] = scaler.transform(input_df[numerical_cols])
+
+# --- Debugging (optional) ---
+st.write("Processed input for prediction:")
+st.write(input_df)
 
 # --- Prediction ---
 if st.button("Predict"):
