@@ -1,12 +1,12 @@
 import streamlit as st
 import pickle
-import numpy as np
 import pandas as pd
 
+st.set_page_config(page_title="Loan Status Prediction", page_icon="🏦")
 st.title("🏦 Loan Status Prediction App")
 st.write("Enter applicant details to predict loan approval status.")
 
-# Load models and encoders
+# --- Load model and preprocessing objects ---
 with open("loan_model.pkl", "rb") as f:
     model = pickle.load(f)
 
@@ -19,8 +19,8 @@ with open("label_encoders.pkl", "rb") as f:
 with open("target_encoder.pkl", "rb") as f:
     target_encoder = pickle.load(f)
 
-# --- User Inputs ---
-def user_input():
+# --- Function to get user input ---
+def get_user_input():
     gender = st.selectbox("Gender", ["Male", "Female"]).title()
     married = st.selectbox("Married", ["Yes", "No"]).title()
     dependents = st.number_input("Dependents", 0, 10, 0)
@@ -34,40 +34,39 @@ def user_input():
     property_area = st.selectbox("Property Area", ["Urban", "Semiurban", "Rural"]).title()
     
     data = {
-        "gender": gender,
-        "married": married,
-        "dependents": dependents,
-        "education": education,
-        "self_employed": self_employed,
-        "applicant_income": applicant_income,
-        "coapplicant_income": coapplicant_income,
-        "loan_amount": loan_amount,
-        "loan_amount_term": loan_amount_term,
-        "credit_history": credit_history,
-        "property_area": property_area
+        "Gender": gender,
+        "Married": married,
+        "Dependents": dependents,
+        "Education": education,
+        "Self_Employed": self_employed,
+        "ApplicantIncome": applicant_income,
+        "CoapplicantIncome": coapplicant_income,
+        "LoanAmount": loan_amount,
+        "Loan_Amount_Term": loan_amount_term,
+        "Credit_History": credit_history,
+        "Property_Area": property_area
     }
-    
     return pd.DataFrame([data])
 
-input_df = user_input()
+input_df = get_user_input()
 
 # --- Preprocess input safely ---
 for col, le in label_encoders.items():
     if col in input_df.columns:
-        # Replace unseen categories with most frequent class from training
+        # Replace unseen categories with most frequent training class
         input_df[col] = input_df[col].apply(lambda x: x if x in le.classes_ else le.classes_[0])
         input_df[col] = le.transform(input_df[col])
 
-# Scale numerical features
-numerical_cols = ["dependents","applicant_income","coapplicant_income","loan_amount","loan_amount_term"]
+# --- Scale numerical features ---
+numerical_cols = ['ApplicantIncome','CoapplicantIncome','Dependents','LoanAmount','Loan_Amount_Term']
 input_df[numerical_cols] = scaler.transform(input_df[numerical_cols])
 
-# --- Debugging (optional) ---
-st.write("Processed input for prediction:")
+# --- Display processed input (optional) ---
+st.subheader("Processed Input Data")
 st.write(input_df)
 
-# --- Prediction ---
-if st.button("Predict"):
-    pred = model.predict(input_df)
-    result = target_encoder.inverse_transform(pred)[0]
+# --- Predict ---
+if st.button("Predict Loan Status"):
+    prediction = model.predict(input_df)
+    result = target_encoder.inverse_transform(prediction)[0]
     st.success(f"Predicted Loan Status: {result}")
